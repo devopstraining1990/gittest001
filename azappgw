@@ -1,0 +1,24 @@
+az group create --name rg-0001 --location eastus
+
+az network public-ip create -n pip-appgw -g rg-0001 --allocation-method Static --sku standard
+
+#create subnet for appgw in the same subnet where aks is present
+
+az network application-gateway create -n appgw-01 -l eastus -g rg-0001 --sku Standard_v2 --public-ip-address pip-appgw --vnet-name rg-0001-vnet --subnet apw --priority 100
+
+az network application-gateway show -n appgw-01 -g rg-0001 -o tsv --query "id"
+
+az aks  enable-addons -n aks-0001 -g rg-0001 -a ingress-appgw --appgw-id /subscriptions/c8ab01f9-4309-4142-b9d5-8b5845e0bf35/resourceGroups/rg-0001/providers/Microsoft.Network/applicationGateways/appgw-01
+
+az aks get-credentials -n aks-0001 -g rg-0001
+
+
+connect to the ingress pod and check the logs if the pod is connected to appgw or not
+
+add role assignment in appgw for ingress user (contributor)
+
+connect to the ingress pod and check the logs if the pod is connected to appgw or not(verification)
+
+Note: ssl certificate need to install for appgw  (public dns --> appgw pip)
+
+az network application-gateway ssl-cert create -g "" --gateway-name "" --origin --cert-file sample.pfx --cert-password ""
