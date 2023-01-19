@@ -1,0 +1,107 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- Feature/ns
+
+resources:
+- repo: self
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+- stage: build
+  jobs:
+  - job: build
+    steps:
+    - script: echo Hello, world!
+      displayName: 'Run a build script'
+
+- stage: deploy
+  jobs:
+  #- job: deploy
+  - deployment: mydeployment
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: 'dev'  # target environment name and optionally a resource name to record the deployment history; format: <environment-name>.<resource-name>
+    strategy:
+      runOnce:    #rolling, canary are the other strategies that are supported
+        deploy:
+          steps:
+          - checkout: self
+          - script: echo Hello, world!
+            displayName: 'Run a deploy script'
+    
+
+
+#steps:
+#- script:echo Hello, world!
+#  displayame: 'Run a one-line script'
+#
+          - script: |
+              echo Add other tasks to build, test, and deploy your project.
+              echo See https://aka.ms/yaml
+            displayName: 'Run a multi-line script'
+          #- task: KubernetesManifest@0
+          #  inputs:
+          #    action: 'deploy'
+          #    kubernetesServiceConnection: 'k8s-svc'
+          #    manifests: '$(Pipeline.Workspace)/manifests/ns.yml'
+          #- task: KubernetesManifest@0
+          #  inputs:
+          #    action: 'deploy'
+          #    kubernetesServiceConnection: 'cni-svc'
+          #    manifests: 'ns.yml'
+          #    namespace: dev1
+         
+          - task: HelmInstaller@0
+            displayName: Installing Helm
+            inputs:
+              helmVersion: '2.14.1'
+              installKubectl: true
+         
+          - task: HelmDeploy@0
+            displayName: Checking the helm repo available or not
+            inputs:
+              connectionType: 'Kubernetes Service Connection'
+              kubernetesServiceConnection: 'cni-svc'
+              command: 'ls'
+         
+          - task: PowerShell@2
+            displayName: Adding the Nginx helm repo
+            inputs:
+              targetType: 'inline'
+              script: |
+                # Write your PowerShell commands here.
+                
+                helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+                helm repo update
+          - task: HelmDeploy@0
+            inputs:
+              connectionType: 'Kubernetes Service Connection'
+              kubernetesServiceConnection: 'cni-svc'
+              command: 'ls'
+          - task: PowerShell@2
+            inputs:
+              targetType: 'inline'
+              script: |
+                # Write your PowerShell commands here.
+                
+                Write-Host "Hello World"
+                pwd
+                ls -al
+          - task: HelmDeploy@0
+            displayName: Installing the Nginx Ingress Controller
+            inputs:
+              connectionType: 'Kubernetes Service Connection'
+              kubernetesServiceConnection: 'cni-svc'
+              namespace: 'ingress-basic'
+              command: 'install'
+              chartType: 'Name'
+              chartName: 'ingress-nginx/ingress-nginx'
+              overrideValues: ' controller.replicaCount=2 --set controller.nodeSelector."kubernetes\.io/os"=linux --set controller.nodeSelector."kubernetes\.io/os"=linux --set defaultBackend.nodeSelector."kubernetes\.io/os"=linux'
+              valueFile: 'internal-ingress.yml'
+          
