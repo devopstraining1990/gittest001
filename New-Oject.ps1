@@ -3,5 +3,5 @@ $custiomobject = @{
     lastname  = "meenige"
 }
 
-$outobj = New-Object psobject -Property $custiomobject;
+ytyt yjyuy $outobj = New-Object psobject -Property $custiomobject;
 Write-Host $outobj | Format-List 
